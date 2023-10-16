@@ -42,16 +42,32 @@ export async function snacksRoutes(app: FastifyInstance) {
 
     const snackCount = await knex('snacks').where({ session }).count()
 
-    const stipulatedSequence = await knex('snacks')
-      .where({ session })
-      .orderBy('time', 'asc')
-      .rank('none', 'stipulated', 'stipulated_rank')
+    const stipulatedSequences: any = []
+    let index = 0
+
+    const snacks = await knex('snacks').where({ session }).orderBy('time')
+
+    stipulatedSequences[index] = []
+    for (const snack of snacks) {
+      if (snack.stipulated === 1) {
+        stipulatedSequences[index].push(snack)
+      } else {
+        if (stipulatedSequences[index].length > 0) {
+          index++
+          stipulatedSequences[index] = []
+        }
+      }
+    }
+
+    stipulatedSequences.sort((a: any, b: any) => {
+      return b.length - a.length
+    })
 
     return reply.send({
       stipulatedCount: stipulatedCount[0]['count(*)'],
       unstipulatedCount: unstipulatedCount[0]['count(*)'],
       snackCount: snackCount[0]['count(*)'],
-      stipulatedSequence,
+      stipulatedSequences: stipulatedSequences[0],
     })
   })
 
